@@ -1,0 +1,45 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\src\asmtk\asmparser.cpp">
+      <Filter>src\asmtk</Filter>
+    </ClCompile>
+    <ClCompile Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\src\asmtk\asmtokenizer.cpp">
+      <Filter>src\asmtk</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\src\asmtk\asmtk.h">
+      <Filter>src\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\src\asmtk\asmparser.h">
+      <Filter>src\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\src\asmtk\asmtokenizer.h">
+      <Filter>src\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\src\asmtk\elfdefs.h">
+      <Filter>src\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\src\asmtk\globals.h">
+      <Filter>src\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\src\asmtk\parserutils.h">
+      <Filter>src\asmtk</Filter>
+    </ClInclude>
+    <ClInclude Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\src\asmtk\strtod.h">
+      <Filter>src\asmtk</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\_deps\polyhook2-src\asmtk\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="src">
+      <UniqueIdentifier>{C10BA1A9-3F1B-3351-9A16-4B254266110B}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="src\asmtk">
+      <UniqueIdentifier>{3FE5FC4E-4706-328E-9258-63780EFDB9B4}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

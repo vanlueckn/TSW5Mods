@@ -1,0 +1,134 @@
+{
+    nasm_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    swift_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    envs_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    fpc_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = true,
+        plat = "windows",
+        __global = true
+    },
+    yasm_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = true,
+        plat = "windows",
+        __global = true
+    },
+    swift_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = true,
+        plat = "windows",
+        __global = true
+    },
+    gcc_arch_x86_64_plat_linux = {
+        __checked = {
+            program = "/usr/bin/gcc",
+            name = "gcc"
+        },
+        plat = "linux",
+        arch = "x86_64"
+    },
+    cuda_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    rust_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = true,
+        plat = "windows",
+        __global = true
+    },
+    yasm_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    clang_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = {
+            program = "/usr/bin/clang",
+            name = "clang"
+        },
+        plat = "windows",
+        __global = true
+    },
+    go_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = true,
+        plat = "windows",
+        __global = true
+    },
+    nasm_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = true,
+        plat = "windows",
+        __global = true
+    },
+    nim_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = false,
+        plat = "windows",
+        __global = true
+    },
+    cuda_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = true,
+        plat = "windows",
+        __global = true
+    },
+    fasm_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    nim_arch_x86_64_plat_linux = {
+        __checked = false,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    gfortran_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = true,
+        plat = "windows",
+        __global = true
+    },
+    fpc_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    go_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    msvc_arch_x64_plat_windows = {
+        arch = "x64",
+        __checked = false,
+        plat = "windows",
+        __global = true
+    },
+    gfortran_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    },
+    rust_arch_x86_64_plat_linux = {
+        __checked = true,
+        plat = "linux",
+        arch = "x86_64"
+    }
+}

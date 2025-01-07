@@ -1,0 +1,9 @@
+{
+    "files.associations": {
+        "chrono": "cpp",
+        "condition_variable": "cpp",
+        "mutex": "cpp",
+        "shared_mutex": "cpp",
+        "*.rh": "cpp"
+    }
+}

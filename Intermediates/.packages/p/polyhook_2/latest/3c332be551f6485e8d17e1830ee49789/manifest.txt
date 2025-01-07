@@ -1,0 +1,44 @@
+{
+    arch = "x64",
+    artifacts = {
+        installdir = [[G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\3c332be551f6485e8d17e1830ee49789]]
+    },
+    configs = {
+        debug = false,
+        pic = true,
+        runtimes = "MD",
+        shared = false
+    },
+    deps = {
+        zycore = {
+            buildhash = "597400a2515a48799d0d4afb60f6c5f7",
+            version = "v1.5.0"
+        },
+        zydis = {
+            buildhash = "0d628bf0862642d6bfd12a460e4d571a",
+            version = "v4.1.0"
+        }
+    },
+    envs = { },
+    librarydeps = {
+        "zydis",
+        "zycore"
+    },
+    mode = "release",
+    name = "polyhook_2",
+    pathenvs = {
+        "ACLOCAL_PATH",
+        "CMAKE_PREFIX_PATH",
+        "LD_LIBRARY_PATH",
+        "PYTHONPATH",
+        "PKG_CONFIG_PATH",
+        "PATH",
+        "DYLD_LIBRARY_PATH"
+    },
+    plat = "windows",
+    repo = {
+        name = "third-party",
+        url = [[G:\TSW5Mods\RE-UE4SS\deps\third-repo]]
+    },
+    version = "latest"
+}

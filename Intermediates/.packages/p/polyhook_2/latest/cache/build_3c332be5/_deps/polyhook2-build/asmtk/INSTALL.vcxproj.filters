@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="17.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="G:\TSW5Mods\Intermediates\.packages\p\polyhook_2\latest\cache\build_3c332be5\CMakeFiles\eeb978aa4eb5a7bcd52b8a13c13556d0\INSTALL_force.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{191568DE-5FBD-3727-9CA5-ACE8D0F63C81}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

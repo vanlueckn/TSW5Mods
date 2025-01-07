@@ -1,0 +1,155 @@
+{
+    ["cargo::patternsleuth_bind"] = {
+        __requirestr = "cargo::patternsleuth_bind",
+        __requireconfs = {
+            optional = false,
+            configs = {
+                cargo_toml = "/mnt/Projekte/Projekte/TSW5Mods/RE-UE4SS/deps/first/patternsleuth_bind/Cargo.toml"
+            },
+            debug = false
+        },
+        __enabled = false
+    },
+    IconFontCppHeaders = {
+        __requirestr = "IconFontCppHeaders v1.0",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        version = "v1.0",
+        installdir = "/home/nils/.xmake/packages/i/iconfontcppheaders/v1.0/2954fa4ab1e34272ba3110a0835e0beb",
+        __enabled = true,
+        sysincludedirs = "/home/nils/.xmake/packages/i/iconfontcppheaders/v1.0/2954fa4ab1e34272ba3110a0835e0beb/include"
+    },
+    imgui = {
+        __requirestr = "imgui v1.89",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                opengl3 = true,
+                runtimes = "MD",
+                win32 = true,
+                dx11 = true,
+                glfw_opengl3 = true
+            }
+        },
+        __enabled = false
+    },
+    Tracy = {
+        __requirestr = "Tracy",
+        __requireconfs = {
+            optional = true,
+            configs = {
+                runtimes = "MD"
+            },
+            debug = false
+        },
+        __enabled = false
+    },
+    zycore = {
+        __requirestr = "zycore v1.5.0",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        __enabled = false
+    },
+    polyhook_2 = {
+        __requirestr = "polyhook_2",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        __enabled = false
+    },
+    fmt = {
+        __requirestr = "fmt 10.2.1",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        __enabled = false
+    },
+    raw_pdb = {
+        __requirestr = "raw_pdb",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        __enabled = false
+    },
+    glaze = {
+        __requirestr = "glaze v2.9.5",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        __enabled = false
+    },
+    zydis = {
+        __requirestr = "zydis v4.1.0",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        __enabled = false
+    },
+    glfw = {
+        __requirestr = "glfw 3.3.9",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        __enabled = false
+    },
+    opengl = {
+        __requirestr = "opengl",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        links = "opengl32",
+        installdir = "/home/nils/.xmake/packages/o/opengl/latest/3c332be551f6485e8d17e1830ee49789",
+        __enabled = true
+    },
+    ImGuiTextEdit = {
+        __requirestr = "ImGuiTextEdit v1.0",
+        __requireconfs = {
+            debug = false,
+            configs = {
+                runtimes = "MD"
+            }
+        },
+        __enabled = false
+    },
+    Superluminal = {
+        __requirestr = "Superluminal",
+        __requireconfs = {
+            system = true,
+            configs = {
+                runtimes = "MD"
+            },
+            debug = false,
+            optional = true
+        },
+        __enabled = false
+    }
+}

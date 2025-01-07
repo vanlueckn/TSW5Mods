@@ -1,0 +1,9 @@
+{
+    cmdlines = {
+        "xmake f -m Game__Shipping__Win64 -p windows -a x64",
+        "xmake f -m Game__Shipping__Win64 -p mingw -a x64",
+        "xmake f -m Game__Shipping__Win64 -p windows -a x64",
+        "xmake f -m Game__Shipping__Win64 -p cross -a x64",
+        "xmake f -m Game__Shipping__Win64 -p windows -a x64"
+    }
+}

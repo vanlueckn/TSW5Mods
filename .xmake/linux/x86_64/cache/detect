@@ -1,0 +1,57 @@
+{
+    find_program = {
+        brew = false,
+        git = "/usr/bin/git",
+        tar = "/usr/bin/tar",
+        nim = false,
+        clang = "/usr/bin/clang",
+        gcc = "/usr/bin/gcc",
+        gzip = "/usr/bin/gzip"
+    },
+    find_program_fetch_package_system = {
+        cmake = "/usr/bin/cmake"
+    },
+    find_program_fetch_package_xmake = {
+        cmake = false
+    },
+    find_programver_fetch_package_system = {
+        ["/usr/bin/cmake"] = "3.31.3"
+    },
+    find_package_windows_x64_fetch_package_system = {
+        Tracy_d10701989a2d47cdb1b5fc555ef9e281_release_external = false,
+        polyhook_2_3c332be551f6485e8d17e1830ee49789_release_external = false,
+        Superluminal_3c332be551f6485e8d17e1830ee49789_release_external = false,
+        ["imgui_81fe3971818e487f8afd6a8bc7598105_release_v1.89_external"] = false,
+        ["imgui_a2edd7d015f940abac129f44594f4758_release_v1.89_external"] = false,
+        ["glaze_fc3dece1b790476da4bffc6ca0de5430_release_v2.9.5_external"] = false,
+        ["ImGuiTextEdit_4c3e42adc03e4ecf98d4c3fd38dae708_release_v1.0_external"] = false,
+        ["cargo::patternsleuth_bind_f6e580eec844461885ff611348460453_release_latest_external"] = false,
+        raw_pdb_9598a058609a47e281d41a5589685c0e_release_external = false,
+        glfw_d59f6dd71e7647cc95d2c1d35e51a39a_release_external = false,
+        ["zycore_597400a2515a48799d0d4afb60f6c5f7_release_v1.5.0_external"] = false,
+        ["zydis_0d628bf0862642d6bfd12a460e4d571a_release_v4.1.0_external"] = false,
+        ["glfw_abfe1ea4ece04143b46bca0514660389_release_3.3.9_external"] = false,
+        ["fmt_2eeacf73125546e1ae5a2a161567d6e6_release_10.2.1_external"] = false
+    },
+    find_package_windows_x64_fetch_package_xmake = {
+        ["xmake::imgui_a2edd7d015f940abac129f44594f4758_release_v1.89_external"] = false,
+        ["xmake::imgui_81fe3971818e487f8afd6a8bc7598105_release_v1.89_external"] = false,
+        ["xmake::raw_pdb_9598a058609a47e281d41a5589685c0e_release_v1.0.0_external"] = false,
+        ["xmake::glfw_abfe1ea4ece04143b46bca0514660389_release_3.3.9_external"] = false,
+        ["xmake::IconFontCppHeaders_2954fa4ab1e34272ba3110a0835e0beb_release_v1.0_external"] = {
+            version = "v1.0",
+            sysincludedirs = {
+                "/home/nils/.xmake/packages/i/iconfontcppheaders/v1.0/2954fa4ab1e34272ba3110a0835e0beb/include"
+            }
+        },
+        ["xmake::glaze_fc3dece1b790476da4bffc6ca0de5430_release_v2.9.5_external"] = false,
+        ["xmake::glfw_d59f6dd71e7647cc95d2c1d35e51a39a_release_3.4_external"] = false,
+        ["xmake::ImGuiTextEdit_4c3e42adc03e4ecf98d4c3fd38dae708_release_v1.0_external"] = false,
+        ["xmake::fmt_2eeacf73125546e1ae5a2a161567d6e6_release_10.2.1_external"] = false,
+        ["xmake::Tracy_d10701989a2d47cdb1b5fc555ef9e281_release_v0.10_external"] = false,
+        ["xmake::zycore_597400a2515a48799d0d4afb60f6c5f7_release_v1.5.0_external"] = false,
+        ["xmake::zydis_0d628bf0862642d6bfd12a460e4d571a_release_v4.1.0_external"] = false,
+        ["xmake::polyhook_2_3c332be551f6485e8d17e1830ee49789_release_latest_external"] = false
+    },
+    ["detect.sdks.find_vcpkgdir"] = false
+}

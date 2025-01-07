@@ -1,0 +1,7 @@
+{
+    errdata = "\27[1m/tmp/.xmake1000/250106/_CAA4A7F2BB9941F38F951B61C913817A.cpp:6:17: \27[0m\27[0;1;35mwarning: \27[0m\27[1mexpression result unused [-Wunused-value]\27[0m\
+    6 |                 \"\\xef\\x84\\xa0\";\27[0m\
+      | \27[0;1;32m                ^~~~~~~~~~~~~~\
+\27[0m1 warning generated.\
+"
+}
