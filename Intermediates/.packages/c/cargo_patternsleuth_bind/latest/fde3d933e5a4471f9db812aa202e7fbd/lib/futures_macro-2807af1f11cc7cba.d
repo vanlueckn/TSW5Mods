@@ -1,9 +1,0 @@
-G:\TSW5Mods\Intermediates\.packages\c\cargo_patternsleuth_bind\latest\cache\source\target\release\deps\futures_macro-2807af1f11cc7cba.dll: C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src/lib.rs C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\executor.rs C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\join.rs C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\select.rs C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\stream_select.rs
-
-G:\TSW5Mods\Intermediates\.packages\c\cargo_patternsleuth_bind\latest\cache\source\target\release\deps\futures_macro-2807af1f11cc7cba.d: C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src/lib.rs C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\executor.rs C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\join.rs C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\select.rs C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\stream_select.rs
-
-C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src/lib.rs:
-C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\executor.rs:
-C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\join.rs:
-C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\select.rs:
-C:\Users\Nils\.cargo\registry\src\index.crates.io-6f17d22bba15001f\futures-macro-0.3.31\src\stream_select.rs:

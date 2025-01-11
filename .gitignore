@@ -364,3 +364,5 @@ FodyWeavers.xsd
 
 
 Binaries/
+Intermediates/
+vsxmake2022/

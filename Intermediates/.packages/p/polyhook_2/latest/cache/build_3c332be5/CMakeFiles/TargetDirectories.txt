@@ -1,9 +1,0 @@
-G:/TSW5Mods/Intermediates/.packages/p/polyhook_2/latest/cache/build_3c332be5/CMakeFiles/INSTALL.dir
-G:/TSW5Mods/Intermediates/.packages/p/polyhook_2/latest/cache/build_3c332be5/CMakeFiles/ALL_BUILD.dir
-G:/TSW5Mods/Intermediates/.packages/p/polyhook_2/latest/cache/build_3c332be5/CMakeFiles/ZERO_CHECK.dir
-G:/TSW5Mods/Intermediates/.packages/p/polyhook_2/latest/cache/build_3c332be5/_deps/polyhook2-build/CMakeFiles/PolyHook_2.dir
-G:/TSW5Mods/Intermediates/.packages/p/polyhook_2/latest/cache/build_3c332be5/_deps/polyhook2-build/CMakeFiles/INSTALL.dir
-G:/TSW5Mods/Intermediates/.packages/p/polyhook_2/latest/cache/build_3c332be5/_deps/polyhook2-build/CMakeFiles/ALL_BUILD.dir
-G:/TSW5Mods/Intermediates/.packages/p/polyhook_2/latest/cache/build_3c332be5/_deps/polyhook2-build/asmtk/CMakeFiles/asmjit.dir
-G:/TSW5Mods/Intermediates/.packages/p/polyhook_2/latest/cache/build_3c332be5/_deps/polyhook2-build/asmtk/CMakeFiles/asmtk.dir
-G:/TSW5Mods/Intermediates/.packages/p/polyhook_2/latest/cache/build_3c332be5/_deps/polyhook2-build/asmtk/CMakeFiles/INSTALL.dir
