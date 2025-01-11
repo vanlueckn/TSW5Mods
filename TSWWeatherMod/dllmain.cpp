@@ -52,7 +52,7 @@ static UFunction* get_function_by_name_in_chain(const StringType& name, UClass* 
     return nullptr;
 }
 
-auto enable_disable_main_menu_slider_childs(const uintptr_t* p, const size_t len, const bool enable)
+static auto enable_disable_main_menu_slider_childs(const uintptr_t* p, const size_t len, const bool enable)
 {
     for (size_t i = 0; i < len; ++i)
     {
@@ -135,9 +135,11 @@ auto mode_slider_settings_post_update_mode(const UnrealScriptFunctionCallableCon
                                : (*presets_slider)->GetClassPrivate(); FProperty* property : Struct->
          ForEachPropertyInChain())
     {
-        Output::send<LogLevel::Verbose>(STR("Property: {} with Type {}\n"), property->GetFName().ToString(), property->GetCPPType().GetCharArray());
+        Output::send<LogLevel::Verbose>(
+            STR("Property: {} with Type {}\n"), property->GetFName().ToString(), property->GetCPPType().GetCharArray());
     }
-    const auto presets_slide_display_text = (*presets_slider)->GetValuePtrByPropertyNameInChain<FText>(STR("DisplayText"));
+    const auto presets_slide_display_text = (*presets_slider)->GetValuePtrByPropertyNameInChain<FText>(
+        STR("DisplayText"));
     if (!presets_slide_display_text)
     {
         Output::send<LogLevel::Error>(STR("PresetsSliderDisplayText class invalid\n"));
