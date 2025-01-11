@@ -1,7 +1,7 @@
 #include "restclient.hpp"
 
 RestClient::RestClient(const std::wstring& host, INTERNET_PORT port,
-	bool useHttps)
+	const bool useHttps)
 	: host(host), port(port), useHttps(useHttps) {
 	hSession = WinHttpOpen(L"RESTClient/1.0", WINHTTP_ACCESS_TYPE_DEFAULT_PROXY,
 		WINHTTP_NO_PROXY_NAME, WINHTTP_NO_PROXY_BYPASS, 0);
@@ -81,15 +81,15 @@ nlohmann::json RestClient::Get(const std::wstring& endpoint) {
 
 nlohmann::json RestClient::Post(const std::wstring& endpoint,
 	const nlohmann::json& body) {
-	std::string bodyStr = body.dump();
-	std::wstring bodyWStr(bodyStr.begin(), bodyStr.end());
-	std::string response = PerformRequest(endpoint, L"POST", bodyWStr);
+	std::string body_str = body.dump();
+	const std::wstring body_w_str(body_str.begin(), body_str.end());
+	std::string response = PerformRequest(endpoint, L"POST", body_w_str);
 	return nlohmann::json::parse(response);
 }
 
 std::wstring RestClient::ConvertUtf8ToWide(const std::string& str)
 {
-	int count = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), NULL, 0);
+	const int count = MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), nullptr, 0);
 	std::wstring wstr(count, 0);
 	MultiByteToWideChar(CP_UTF8, 0, str.c_str(), str.length(), &wstr[0], count);
 	return wstr;
