@@ -1,6 +1,0 @@
-{
-    packages = {
-        "/home/nils/.xmake/packages/o/opengl/latest/3c332be551f6485e8d17e1830ee49789",
-        "/home/nils/.xmake/packages/i/iconfontcppheaders/v1.0/2954fa4ab1e34272ba3110a0835e0beb"
-    }
-}

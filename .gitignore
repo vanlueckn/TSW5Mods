@@ -367,3 +367,6 @@ Binaries/
 Intermediates/
 vsxmake2022/
 .vscode/
+TSWWeatherMod/.vscode/
+.ccls-cache/
+.xmake/
