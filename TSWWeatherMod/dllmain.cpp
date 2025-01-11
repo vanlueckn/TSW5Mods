@@ -391,27 +391,6 @@ private:
 		return gameInstance;
 	}
 
-
-	UObject* GetPlayerControllerCached() {
-		if (playerControllerCached) {
-			return playerControllerCached;
-		}
-
-		playerControllerCached = GetPlayerController();
-		return playerControllerCached;
-	}
-
-	UObject* GetPlayerController() {
-		auto playerController = UObjectGlobals::FindFirstOf(STR("PlayerController"));
-
-		if (!playerController) {
-			Output::send<LogLevel::Error>(STR("Player controller not found\n"));
-			return nullptr;
-		}
-
-		return playerController;
-	}
-
 	UObject* GetKismetLibraryCached() {
 		if (kismetLibraryCached) {
 			return kismetLibraryCached;
@@ -442,18 +421,6 @@ private:
 		}
 		else {
 			Output::send<LogLevel::Error>(STR("Camera Actor not found\n"));
-			return nullptr;
-		}
-	}
-
-	AActor* GetWeatherManager() {
-		auto weatherManagerClass = STR("BP_Core_WeatherManager_C");
-		auto weatherManager = Unreal::UObjectGlobals::FindFirstOf(weatherManagerClass);
-		if (weatherManager) {
-			return (AActor*)weatherManager;
-		}
-		else {
-			Output::send<LogLevel::Error>(STR("Weather Manager not found\n"));
 			return nullptr;
 		}
 	}
