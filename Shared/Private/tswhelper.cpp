@@ -15,7 +15,7 @@ using namespace RC::Unreal;
 
 struct lat_lon;
 
-TSWShared::TSWHelper* TSWShared::TSWHelper::singleton_ = nullptr;;
+TSWShared::TSWHelper* TSWShared::TSWHelper::singleton_ = nullptr;
 
 /**
  * Static methods should be defined outside the class.
@@ -83,6 +83,31 @@ UObject* TSWShared::TSWHelper::get_location_library()
     return location_library;
 }
 
+Unreal::UObject* TSWShared::TSWHelper::get_function_library_cached()
+{
+    if (function_library_cached_)
+    {
+        return function_library_cached_;
+    }
+
+    function_library_cached_ = get_function_library();
+    return function_library_cached_;
+}
+
+Unreal::UObject* TSWShared::TSWHelper::get_function_library()
+{
+    const auto function_library = UObjectGlobals::FindObject<UObject>(
+        nullptr, TEXT("/Script/Engine.Default__TS2GameplayFunctionLibrary"));
+
+    if (!function_library)
+    {
+        Output::send<LogLevel::Error>(STR("Function library not found\n"));
+        return nullptr;
+    }
+
+    return function_library;
+}
+
 
 UFunction* TSWShared::TSWHelper::get_function_by_name(const StringType& name, UObject* input_object)
 {
@@ -148,6 +173,32 @@ TSWShared::lat_lon TSWShared::TSWHelper::get_current_position_in_game()
     latlon.lon = params.out_long;
 
     return latlon;
+}
+
+TSWShared::tsw_date_time TSWShared::TSWHelper::get_world_date_time(UObject* world_context_object,
+                                                                   bool local_time)
+{
+    const auto function_lib = get_function_library_cached();
+
+    if (cache_functions(cached_get_world_date_time_, STR("GetDateTime"), function_lib))
+    {
+        return {};
+    }
+
+    struct
+    {
+        // uworld, bool, pointer to struct
+        UObject* world_context_obj;
+        bool local_time;
+        ue_datetime out_date_time;
+    } params{};
+
+    params.world_context_obj = world_context_object;
+    params.local_time = local_time;
+    
+    function_lib->ProcessEvent(cached_get_world_date_time_, &params);
+
+    return ue_to_tsw_date_time(params.out_date_time);
 }
 
 
@@ -228,4 +279,59 @@ float TSWShared::TSWHelper::calculate_distance_in_miles_lat_lon(const lat_lon p1
         sin(delta_lambda / 2) * sin(delta_lambda / 2);
     const float c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return R * c * 0.000621371;
+}
+
+bool TSWShared::TSWHelper::cache_functions(const UFunction* func, const wchar_t* func_name, UObject* func_lib)
+{
+    if (!func)
+    {
+        func = get_function_by_name(func_name, func_lib);
+        if (!func)
+        {
+            Output::send<LogLevel::Error>(STR("GetWorldDateTime function not found\n"));
+            return false;
+        }
+    }
+
+    return true;
+}
+
+TSWShared::tsw_date_time TSWShared::TSWHelper::ue_to_tsw_date_time(const ue_datetime& ue_date_time)
+{
+    // Hols the ticks in 100 nanoseconds resolution since 1/1/0001 A.D.
+    auto const ticks = ue_date_time.ticks;
+
+    tsw_date_time tsw_date_time;
+
+    // Based on FORTRAN code in:
+    // Fliegel, H. F. and van Flandern, T. C.,
+    // Communications of the ACM, Vol. 11, No. 10 (October 1968).
+    int32 i, j, k, l, n;
+
+    l = FMath::FloorToInt(static_cast<float>(GetJulianDay(ue_date_time) + 0.5)) + 68569;
+    n = 4 * l / 146097;
+    l = l - (146097 * n + 3) / 4;
+    i = 4000 * (l + 1) / 1461001;
+    l = l - 1461 * i / 4 + 31;
+    j = 80 * l / 2447;
+    k = l - 2447 * j / 80;
+    l = j / 11;
+    j = j + 2 - 12 * l;
+    i = 100 * (n - 49) + i + l;
+
+    tsw_date_time.ticks = ticks;
+    
+    tsw_date_time.year = i;
+    tsw_date_time.month = j;
+    tsw_date_time.day = k;
+
+    int hour = static_cast<int32>(ticks / ticks_per_hour) % 24;
+    int minute = static_cast<int32>(ticks / ticks_per_minute) % 60;
+    int second = static_cast<int32>(ticks / ticks_per_second) % 60;
+
+    tsw_date_time.hour = hour;
+    tsw_date_time.minute = minute;
+    tsw_date_time.second = second;
+
+    return tsw_date_time;
 }
