@@ -1,15 +1,10 @@
-#include <chrono>
-#include <cmath>
-#include <numbers>
 #include <DynamicOutput/DynamicOutput.hpp>
 #include <Mod/CppUserModBase.hpp>
 #include <Unreal/FText.hpp>
 #include <Unreal/UClass.hpp>
-#include <Unreal/UFunction.hpp>
-#include <Unreal/UKismetSystemLibrary.hpp>
-#include <Unreal/UObject.hpp>
-#include <Unreal/UObjectGlobals.hpp>
 #include <restclient.hpp>
+
+#include "tswhelper.hpp"
 
 using namespace RC;
 using namespace RC::Unreal;
@@ -32,25 +27,6 @@ struct weather_data
     float percipitation;
 };
 
-struct lat_lon
-{
-    float lat;
-    float lon;
-};
-
-static UFunction* get_function_by_name_in_chain(const StringType& name, UClass* input_object)
-{
-    for (UFunction* function : input_object->ForEachFunctionInChain())
-    {
-        if (function->GetNamePrivate().ToString() == name)
-        {
-            return function;
-        }
-    }
-
-    return nullptr;
-}
-
 static auto enable_disable_main_menu_slider_childs(const uintptr_t* p, const size_t len, const bool enable)
 {
     for (size_t i = 0; i < len; ++i)
@@ -63,7 +39,7 @@ static auto enable_disable_main_menu_slider_childs(const uintptr_t* p, const siz
             continue;
         }
 
-        const auto blocked_function = get_function_by_name_in_chain(STR("SetBlocked"), element_class);
+        const auto blocked_function = TSWHelper::get_function_by_name_in_chain(STR("SetBlocked"), element_class);
         if (!blocked_function)
         {
             Output::send<LogLevel::Error>(STR("Blocked function not found\n"));
@@ -152,14 +128,16 @@ auto mode_slider_settings_post_update_mode(const UnrealScriptFunctionCallableCon
         return;
     }
     const auto presets_slider_text_box_class = (*presets_slider_text_box)->GetClassPrivate();
-    const auto set_text_function = get_function_by_name_in_chain(STR("SetText"), presets_slider_text_box_class);
+    const auto set_text_function = TSWHelper::get_function_by_name_in_chain(
+        STR("SetText"), presets_slider_text_box_class);
     if (!set_text_function)
     {
         Output::send<LogLevel::Error>(STR("SetText function not found\n"));
         return;
     }
 
-    const auto get_text_function = get_function_by_name_in_chain(STR("GetText"), presets_slider_text_box_class);
+    const auto get_text_function = TSWHelper::get_function_by_name_in_chain(
+        STR("GetText"), presets_slider_text_box_class);
     if (!get_text_function)
     {
         Output::send<LogLevel::Error>(STR("GetText function not found\n"));
@@ -168,9 +146,10 @@ auto mode_slider_settings_post_update_mode(const UnrealScriptFunctionCallableCon
 
     const auto mode_slider_class = (*mode_slider)->GetClassPrivate();
     const auto presets_slider_class = (*presets_slider)->GetClassPrivate();
-    const auto enable_function = get_function_by_name_in_chain(STR("Enable"), presets_slider_class);
-    const auto disable_function = get_function_by_name_in_chain(STR("Disable"), presets_slider_class);
-    const auto selected_option_index = get_function_by_name_in_chain(STR("GetSelectedOptionIndex"), mode_slider_class);
+    const auto enable_function = TSWHelper::get_function_by_name_in_chain(STR("Enable"), presets_slider_class);
+    const auto disable_function = TSWHelper::get_function_by_name_in_chain(STR("Disable"), presets_slider_class);
+    const auto selected_option_index = TSWHelper::get_function_by_name_in_chain(
+        STR("GetSelectedOptionIndex"), mode_slider_class);
 
     if (!enable_function || !disable_function || !selected_option_index)
     {
@@ -236,7 +215,7 @@ auto mode_slider_populate_callback(const UnrealScriptFunctionCallableContext& co
     }
 
     const auto mode_slider_class = (*mode_slider)->GetClassPrivate();
-    const auto add_option_function = get_function_by_name_in_chain(STR("AddOption"), mode_slider_class);
+    const auto add_option_function = TSWHelper::get_function_by_name_in_chain(STR("AddOption"), mode_slider_class);
 
     if (!add_option_function)
     {
@@ -255,8 +234,6 @@ auto mode_slider_populate_callback(const UnrealScriptFunctionCallableContext& co
 class TSWWeatherMod final : public CppUserModBase
 {
 private:
-    UObject* player_controller_cached_ = nullptr;
-    UObject* kismet_library_cached_ = nullptr;
     UObject* game_instance_cached_ = nullptr;
     steady_clock::time_point last_run_ = steady_clock::now();
     steady_clock::time_point last_run_minute_ = steady_clock::now();
@@ -315,10 +292,10 @@ private:
         const auto player_controller = *local_player->GetValuePtrByPropertyNameInChain<UObject*>(
             STR("PlayerController"));
 
-        const auto kismet_lib = get_kismet_library_cached();
+        const auto kismet_lib = TSWHelper::get_instance()->get_kismet_library_cached();
         if (!kismet_lib) return;
 
-        const auto kismet_static_function = get_function_by_name(STR("ExecuteConsoleCommand"), kismet_lib);
+        const auto kismet_static_function = TSWHelper::get_function_by_name(STR("ExecuteConsoleCommand"), kismet_lib);
         if (!kismet_static_function)
         {
             Output::send<LogLevel::Error>(STR("Static kismet function not found\n"));
@@ -326,26 +303,27 @@ private:
         }
 
 
-        execute_console_command(
+        TSWHelper::execute_console_command(
             FString(std::format(L"{} {}", set_temperature, static_cast<int>(roundf(data.temperature))).c_str()),
             player_controller, kismet_static_function, kismet_lib);
         //ExecuteConsoleCommand(FString(std::format(L"{} {}", setWetness, data.rain).c_str()), playerController, kismetStaticFunction, kismetLib);
-        execute_console_command(
+        TSWHelper::execute_console_command(
             FString(std::format(L"{} {}", set_wind_angle, static_cast<int>(roundf(data.wind_direction))).c_str()),
             player_controller, kismet_static_function, kismet_lib);
-        execute_console_command(
+        TSWHelper::execute_console_command(
             FString(std::format(L"{} {}", set_wind_strength, calculate_wind_value(data.wind_speed)).c_str()),
             player_controller, kismet_static_function, kismet_lib);
-        execute_console_command(
+        TSWHelper::execute_console_command(
             FString(std::format(L"{} {}", set_precipitation, calculate_rain_value(data.percipitation)).c_str()),
             player_controller, kismet_static_function, kismet_lib);
         //ExecuteConsoleCommand(FString(std::format(L"{} {}", setPiledSnow, data.snow).c_str()), playerController, kismetStaticFunction, kismetLib);
         //ExecuteConsoleCommand(FString(std::format(L"{} {}", setGroundSnow, data.snow).c_str()), playerController, kismetStaticFunction, kismetLib);
-        execute_console_command(
+        TSWHelper::execute_console_command(
             FString(std::format(L"{} {}", set_fog_density, calculate_fog_value(data.visibility)).c_str()),
             player_controller, kismet_static_function, kismet_lib);
-        execute_console_command(FString(std::format(L"{} {}", set_cloudiness, data.cloud_cover / 100).c_str()),
-                                player_controller, kismet_static_function, kismet_lib);
+        TSWHelper::execute_console_command(
+            FString(std::format(L"{} {}", set_cloudiness, data.cloud_cover / 100).c_str()),
+            player_controller, kismet_static_function, kismet_lib);
     }
 
     static float calculate_wind_value(const float input)
@@ -419,39 +397,6 @@ private:
         return data;
     }
 
-    static void execute_console_command(FString command, UObject* player_controller, UFunction* kismet_static_function,
-                                        UObject* kismet_lib)
-    {
-        struct
-        {
-            UObject* world_context_obj;
-            FString command;
-            class APlayerController* player;
-        } params{};
-
-        auto player_controller_casted = reinterpret_cast<AActor*>(player_controller);
-
-        params.player = reinterpret_cast<APlayerController*>(player_controller);
-        params.command = command;
-        params.world_context_obj = player_controller;
-
-        if (!is_valid_u_object(player_controller))
-        {
-            Output::send<LogLevel::Verbose>(STR("Player controller is invalid\n"));
-        }
-
-        if (!is_valid_u_object(kismet_static_function))
-        {
-            Output::send<LogLevel::Verbose>(STR("kismetStaticFunction is invalid\n"));
-        }
-
-        const auto string_data = command.GetCharTArray().GetData();
-
-        Output::send<LogLevel::Verbose>(STR("Executing command: {}\n"), string_data);
-
-        kismet_lib->ProcessEvent(kismet_static_function, &params);
-    }
-
     UObject* get_game_instance_cached()
     {
         if (game_instance_cached_)
@@ -476,141 +421,12 @@ private:
         return game_instance;
     }
 
-    UObject* get_kismet_library_cached()
-    {
-        if (kismet_library_cached_)
-        {
-            return kismet_library_cached_;
-        }
-
-        kismet_library_cached_ = get_kismet_library();
-        return kismet_library_cached_;
-    }
-
-    static UObject* get_kismet_library()
-    {
-        const auto kismet_library = Unreal::UObjectGlobals::FindObject<UObject>(
-            nullptr, TEXT("/Script/Engine.Default__KismetSystemLibrary"));
-
-        if (!kismet_library)
-        {
-            Output::send<LogLevel::Error>(STR("Kismet library not found\n"));
-            return nullptr;
-        }
-
-        return kismet_library;
-    }
-
-    static AActor* get_camera_actor()
-    {
-        const auto camera_actor_class = STR("TS2DefaultCameraManager_C");
-
-        if (const auto camera_actor = UObjectGlobals::FindFirstOf(camera_actor_class))
-        {
-            return reinterpret_cast<AActor*>(camera_actor);
-        }
-        Output::send<LogLevel::Error>(STR("Camera Actor not found\n"));
-        return nullptr;
-    }
-
-    lat_lon get_current_position_in_game()
-    {
-        lat_lon latlon;
-        latlon.lat = 0.0f;
-        latlon.lon = 0.0f;
-
-        location_lib_ = Unreal::UObjectGlobals::FindObject<UClass>(
-            nullptr, TEXT("/Script/TS2Prototype.TS2DebugFunctionLibrary"));
-
-        if (!location_lib_)
-        {
-            Output::send<LogLevel::Error>(STR("Location library not found\n"));
-            return latlon;
-        }
-
-        static_function_ = get_function_by_name(STR("GetActorLatLong"), location_lib_);
-
-        if (!static_function_)
-        {
-            Output::send<LogLevel::Error>(STR("Static function not found\n"));
-            return latlon;
-        }
-
-        struct
-        {
-            AActor* Actor;
-            float outLat;
-            float outLong;
-            bool success;
-        } params{};
-
-        params.Actor = get_camera_actor();
-
-        location_lib_->ProcessEvent(static_function_, &params);
-
-        // send lat and long and sucess to Output
-        Output::send<LogLevel::Verbose>(STR("Lat: {}, Long: {}, Success: {}\n"),
-                                        params.outLat, params.outLong, params.success);
-
-        latlon.lat = params.outLat;
-        latlon.lon = params.outLong;
-
-        return latlon;
-    }
-
-    static UFunction* get_function_by_name(const StringType& name, UObject* input_object)
-    {
-        for (UFunction* Function : input_object->GetClassPrivate()->ForEachFunction())
-        {
-            if (Function->GetNamePrivate().ToString() == name)
-            {
-                return Function;
-            }
-        }
-
-
-        return nullptr;
-    }
-
-    UFunction* get_function_by_name(const StringType& name, UClass* input_class) const
-    {
-        for (UFunction* function : input_class->ForEachFunction())
-        {
-            if (function->GetNamePrivate().ToString() == name)
-            {
-                return function;
-            }
-        }
-        kismet_library_cached_->GetClassPrivate()->ForEachFunction();
-
-        return nullptr;
-    }
-
     void sync_weather(const lat_lon pos)
     {
         if (!RealWeatherEnabled) return;
         Output::send<LogLevel::Verbose>(STR("Syncing weather\n"));
         const weather_data data = get_current_weather(pos);
         ApplyWeatherData(data);
-    }
-
-    static bool is_valid_u_object(UObject* object)
-    {
-        return object && UObjectArray::IsValid(object->GetObjectItem(), false);
-    }
-
-    static float calculate_distance_in_miles_lat_lon(const lat_lon p1, const lat_lon p2)
-    {
-        constexpr float R = 6371e3;
-        const float phi1 = p1.lat * std::numbers::pi / 180;
-        const float phi2 = p2.lat * std::numbers::pi / 180;
-        const float delta_phi = (p2.lat - p1.lat) * std::numbers::pi / 180;
-        const float delta_lambda = (p2.lon - p1.lon) * std::numbers::pi / 180;
-        const float a = sin(delta_phi / 2) * sin(delta_phi / 2) +
-            cos(phi1) * cos(phi2) *
-            sin(delta_lambda / 2) * sin(delta_lambda / 2);
-        const float c = 2 * atan2(sqrt(a), sqrt(1 - a));
-        return R * c * 0.000621371;
     }
 
 public:
@@ -637,15 +453,15 @@ public:
         const auto now = steady_clock::now();
         if (now - last_run_ >= interval_)
         {
-            const auto latlon = get_current_position_in_game();
+            const auto latlon = TSWHelper::get_instance()->get_current_position_in_game();
             last_lat_lon_ = latlon;
             sync_weather(latlon);
             last_run_ = now;
         }
         else if (now - last_run_minute_ >= interval_minute_)
         {
-            const auto latlon = get_current_position_in_game();
-            const auto distance = calculate_distance_in_miles_lat_lon(latlon, last_lat_lon_);
+            const auto latlon = TSWHelper::get_instance()->get_current_position_in_game();
+            const auto distance = TSWHelper::calculate_distance_in_miles_lat_lon(latlon, last_lat_lon_);
             Output::send<LogLevel::Verbose>(STR("Distance: {}mi\n"), distance);
             if (distance > 40)
             {
