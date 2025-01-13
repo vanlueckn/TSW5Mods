@@ -1,7 +1,6 @@
 #include <chrono>
 #include <cmath>
 #include <numbers>
-#include <deps/nlohmann/include/nlohmann/json.hpp>
 #include <DynamicOutput/DynamicOutput.hpp>
 #include <Mod/CppUserModBase.hpp>
 #include <Unreal/FText.hpp>
@@ -10,12 +9,12 @@
 #include <Unreal/UKismetSystemLibrary.hpp>
 #include <Unreal/UObject.hpp>
 #include <Unreal/UObjectGlobals.hpp>
-
-#include "restclient.hpp"
+#include <restclient.hpp>
 
 using namespace RC;
 using namespace RC::Unreal;
 using namespace std::chrono;
+using namespace TSWShared;
 using json = nlohmann::json;
 
 static bool RealWeatherEnabled = false;
@@ -402,7 +401,7 @@ private:
     {
         RestClient client(L"api.open-meteo.com", INTERNET_DEFAULT_HTTPS_PORT, true);
 
-        json get_response = client.Get(std::format(
+        json get_response = client.get(std::format(
             L"/v1/forecast?latitude={}&longitude={}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility",
             latlon.lat, latlon.lon));
 

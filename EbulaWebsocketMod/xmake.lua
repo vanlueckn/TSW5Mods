@@ -1,4 +1,5 @@
-local projectName = "TSWWeatherMod"
+local projectName = "EbulaWebsocketMod"
+add_requires("uwebsockets")
 
 target(projectName)
     add_rules("ue4ss.mod")

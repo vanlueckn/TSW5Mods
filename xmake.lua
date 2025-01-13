@@ -1,2 +1,4 @@
 includes("RE-UE4SS")
+includes("Shared")
 includes("TSWWeatherMod")
+includes("EbulaWebsocketMod")
