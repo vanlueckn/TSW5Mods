@@ -17,6 +17,11 @@ namespace TSWShared
         int minute;
         int second;
         int ticks;
+
+        [[nodiscard]] std::wstring to_iso8601() const
+        {
+            return std::format(L"{}.{}.{}-{}.{}.{}", year, month, day, hour, minute, second);
+        }
     };
 
     constexpr int64_t ticks_per_day = 864000000000;
