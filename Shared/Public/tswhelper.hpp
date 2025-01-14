@@ -20,7 +20,7 @@ namespace TSWShared
 
         [[nodiscard]] std::wstring to_iso8601() const
         {
-            return std::format(L"{}.{}.{}-{}.{}.{}", year, month, day, hour, minute, second);
+            return std::format(L"{}-{}-{}T{}:{}:{}Z", year, month, day, hour, minute, second);
         }
     };
 
@@ -57,7 +57,7 @@ namespace TSWShared
         static TSWHelper *get_instance();
         
         lat_lon get_current_position_in_game();
-        tsw_date_time get_world_date_time(Unreal::UObject* world_context_object, bool local_time);
+        tsw_date_time get_world_date_time(Unreal::UObject* world_context_object);
         static Unreal::AActor* get_camera_actor();
         static Unreal::UFunction* get_function_by_name(const StringType& name,
                                                        Unreal::UObject* input_object);

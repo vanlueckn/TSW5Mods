@@ -175,8 +175,7 @@ TSWShared::lat_lon TSWShared::TSWHelper::get_current_position_in_game()
     return latlon;
 }
 
-TSWShared::tsw_date_time TSWShared::TSWHelper::get_world_date_time(UObject* world_context_object,
-                                                                   bool local_time)
+TSWShared::tsw_date_time TSWShared::TSWHelper::get_world_date_time(UObject* world_context_object)
 {
     const auto function_lib = get_function_library_cached();
 
@@ -194,7 +193,7 @@ TSWShared::tsw_date_time TSWShared::TSWHelper::get_world_date_time(UObject* worl
     } params{};
 
     params.world_context_obj = world_context_object;
-    params.local_time = local_time;
+    params.local_time = false; // because we want the world time in UTC
     
     function_lib->ProcessEvent(cached_get_world_date_time_, &params);
 
