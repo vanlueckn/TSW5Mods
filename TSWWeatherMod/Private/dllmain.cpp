@@ -259,19 +259,19 @@ private:
 
         const auto construct_function = mainMenuWeatherEnvironmentSettingsClass->GetFunctionByName(
             STR("PopulateModeSlider"));
-        const auto updateModeFunction = mainMenuWeatherEnvironmentSettingsClass->GetFunctionByName(STR("UpdateMode"));
+        const auto update_mode_function = mainMenuWeatherEnvironmentSettingsClass->GetFunctionByName(STR("UpdateMode"));
 
         UObjectGlobals::RegisterHook(construct_function, [](...)
         {
         }, &mode_slider_populate_callback, mainMenuWeatherEnvironmentSettingsClass);
-        UObjectGlobals::RegisterHook(updateModeFunction, [](...)
+        UObjectGlobals::RegisterHook(update_mode_function, [](...)
         {
         }, &mode_slider_settings_post_update_mode, mainMenuWeatherEnvironmentSettingsClass);
 
         //modeSlider->ProcessEvent(GetFunctionByName(STR("PopulateModeSlider"), modeSlider), PopulateModeSliderCallback);
     }
 
-    void ApplyWeatherData(const weather_data& data)
+    void apply_weather_data(const weather_data& data)
     {
         auto static set_temperature = STR("ts2.dbg.SetTemperature");
         auto static set_wetness = STR("ts2.dbg.SetWetness");
@@ -426,7 +426,7 @@ private:
         if (!RealWeatherEnabled) return;
         Output::send<LogLevel::Verbose>(STR("Syncing weather\n"));
         const weather_data data = get_current_weather(pos);
-        ApplyWeatherData(data);
+        apply_weather_data(data);
     }
 
 public:

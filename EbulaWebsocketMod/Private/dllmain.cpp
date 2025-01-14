@@ -1,21 +1,24 @@
 #include <uwebsockets/App.h>
 #include <DynamicOutput/DynamicOutput.hpp>
 #include <Mod/CppUserModBase.hpp>
-#include <algorithm>
 #include <thread>
-#include <mutex>
-#include <functional>
-#include <condition_variable>
-#include <queue>
-#include <future>
-#include <set>
-#include <chrono>
+#include <memory>
 
 #include "tswhelper.hpp"
+#include "json.hpp"
 
 using namespace RC;
 using namespace RC::Unreal;
 using namespace std::chrono;
+
+uWS::App* global_app;
+bool global_unreal_init = false;
+
+struct UpdateData
+{
+    TSWShared::lat_lon position;
+    TSWShared::tsw_date_time date_time;
+};
 
 class EbulaWebsocketMod final : public CppUserModBase
 {
@@ -23,128 +26,160 @@ class EbulaWebsocketMod final : public CppUserModBase
     {
     };
 
-    std::set<uWS::WebSocket<false, false, PerSocketData>> websockets_;
-    std::mutex vector_mutex;
-    std::condition_variable vector_cv;
-    steady_clock::time_point last_run_minute_ = steady_clock::now();
-    minutes interval_minute_ = minutes(1);
+    std::unique_ptr<std::thread> thread_1_ = nullptr;
+    nlohmann::json join_message_json_ = {
+        {"event", "join_message"},
+    };
+    std::string join_message_string_ = join_message_json_.dump();
+    std::string_view join_message_ = std::string_view(join_message_string_.c_str(), join_message_string_.size());
+
+    nlohmann::json subscribe_message_json_ = {
+        {"event", "subscribe_message"},
+    };
+    std::string subscribe_message_string_ = subscribe_message_json_.dump();
+    std::string_view subscribe_message_ = std::string_view(subscribe_message_string_.c_str(),
+                                                           subscribe_message_string_.size());
+
+    nlohmann::json unsubscribe_message_json_ = {
+        {"event", "unsubscribe_message"},
+    };
+    std::string unsubscribe_message_string_ = unsubscribe_message_json_.dump();
+    std::string_view unsubscribe_message_ = std::string_view(unsubscribe_message_string_.c_str(),
+                                                             unsubscribe_message_string_.size());
 
 
-    bool initialized_ = false;
-    std::queue<std::function<void()>> queue_;
-    std::mutex queue_mutex_;
-    std::condition_variable queue_cv_;
-    bool stop_processing_ = false;
-
-    template <typename Func>
-    auto enqueue_task(Func task) -> std::future<decltype(task())>
+    bool interpret_message(std::string_view message, uWS::WebSocket<false, true, PerSocketData>* ws) const
     {
-        using return_type = decltype(task());
-        auto promise = std::make_shared<std::promise<return_type>>();
-        auto future = promise->get_future();
-
+        try
         {
-            std::lock_guard lock(queue_mutex_);
-            queue_.push([promise, task]()
+            auto parsed = nlohmann::json::parse(message);
+            if (parsed.contains("subscribe"))
             {
-                try
+                if (const auto string_data = parsed["subscribe"].dump(); string_data.contains("pos"))
                 {
-                    promise->set_value(task());
+                    ws->subscribe("pos");
                 }
-                catch (...)
+                else if (string_data.contains("traindata"))
                 {
-                    promise->set_exception(std::current_exception());
+                    ws->subscribe("traindata");
                 }
-            });
-        }
-        queue_cv_.notify_one();
-        return future;
-    }
+                else
+                {
+                    return false;
+                }
 
-    auto process_tasks()
-    {
-        while (!stop_processing_)
-        {
-            std::unique_lock lock(queue_mutex_);
-            queue_cv_.wait(lock, [&] { return !queue_.empty() || stop_processing_; });
-
-            while (!queue_.empty())
+                ws->send(subscribe_message_, uWS::OpCode::TEXT);
+                return true;
+            }
+            if (parsed.contains("unsubscribe"))
             {
-                auto task = std::move(queue_.front());
-                queue_.pop();
-                lock.unlock();
-                task();
-                lock.lock();
+                if (const auto string_data = parsed["unsubscribe"].dump(); string_data.contains("pos"))
+                {
+                    ws->unsubscribe("pos");
+                }
+                else if (string_data.contains("traindata"))
+                {
+                    ws->unsubscribe("traindata");
+                }
+                else
+                {
+                    return false;
+                }
+                ws->send(unsubscribe_message_, uWS::OpCode::TEXT);
+                return true;
             }
         }
+        catch (...)
+        {
+            return false;
+        }
+
+        return false;
     }
 
-    auto init_websocket_server()
+    auto ws_start()
     {
-        /* ws->getUserData returns one of these */
-
-        std::vector<std::thread*> threads(std::max(static_cast<int>(std::thread::hardware_concurrency()), 1));
-
-        std::ranges::transform(threads, threads.begin(), [](std::thread*)
+        auto app = uWS::App().ws<PerSocketData>("/api", {
+                                                    /* Settings */
+                                                    .compression = uWS::SHARED_COMPRESSOR,
+                                                    .maxPayloadLength = 16 * 1024,
+                                                    .idleTimeout = 10,
+                                                    .maxBackpressure = 1 * 1024 * 1024,
+                                                    /* Handlers */
+                                                    .upgrade = nullptr,
+                                                    .open = [&](auto* ws)
+                                                    {
+                                                        ws->send(join_message_, uWS::OpCode::TEXT);
+                                                    },
+                                                    .message = [&](
+                                                    auto* ws, std::string_view message, uWS::OpCode opCode)
+                                                    {
+                                                        auto success = interpret_message(message, ws);
+                                                        if (!success)
+                                                        {
+                                                            Output::send<LogLevel::Error>(
+                                                                STR("Incoming json message invalid\nMessage: {}\n"),
+                                                                std::wstring(message.begin(), message.end()));
+                                                        }
+                                                    },
+                                                    .drain = [](auto*/*ws*/)
+                                                    {
+                                                        /* Check getBufferedAmount here */
+                                                    },
+                                                    .ping = [](auto*/*ws*/, std::string_view)
+                                                    {
+                                                    },
+                                                    .pong = [](auto*/*ws*/, std::string_view)
+                                                    {
+                                                    },
+                                                    .close = [](
+                                                    auto* ws, int /*code*/, std::string_view /*message*/)
+                                                    {
+                                                    }
+                                                }).listen(9187, [](auto* listen_socket)
         {
-            return new std::thread([]()
+            if (listen_socket)
             {
-                uWS::App().ws<PerSocketData>("/pos", {
-                                                 /* Settings */
-                                                 .compression = uWS::SHARED_COMPRESSOR,
-                                                 .maxPayloadLength = 16 * 1024,
-                                                 .idleTimeout = 10,
-                                                 .maxBackpressure = 1 * 1024 * 1024,
-                                                 /* Handlers */
-                                                 .upgrade = nullptr,
-                                                 .open = [this](auto* ws)
-                                                 {
-                                                     {
-                                                         std::lock_guard lock(vector_mutex);
-                                                         websockets_.insert(ws);
-                                                     }
-                                                 },
-                                                 .message = [](auto* ws, std::string_view message, uWS::OpCode opCode)
-                                                 {
-                                                     ws->send(message, opCode);
-                                                 },
-                                                 .drain = [](auto*/*ws*/)
-                                                 {
-                                                     /* Check getBufferedAmount here */
-                                                 },
-                                                 .ping = [](auto*/*ws*/, std::string_view)
-                                                 {
-                                                 },
-                                                 .pong = [](auto*/*ws*/, std::string_view)
-                                                 {
-                                                 },
-                                                 .close = [this](auto* ws, int /*code*/, std::string_view /*message*/)
-                                                 {
-                                                     {
-                                                         std::lock_guard lock(vector_mutex);
-                                                         websockets_.erase(ws);
-                                                     }
-                                                 }
-                                             }).listen(9187, [](auto* listen_socket)
-                {
-                    if (listen_socket)
-                    {
-                        Output::send<LogLevel::Verbose>(
-                            STR("Thread {} listening on port {}\n"), std::this_thread::get_id(), 9187);
-                    }
-                    else
-                    {
-                        Output::send<LogLevel::Error>(
-                            STR("Thread {} faield to listen on port {}\n"), std::this_thread::get_id(), 9187);
-                    }
-                }).run();
-            });
+                Output::send<LogLevel::Verbose>(
+                    STR("Thread listening on port {}\n"), 9187);
+            }
+            else
+            {
+                Output::send<LogLevel::Error>(
+                    STR("Thread failed to listen on port {}\n"), 9187);
+            }
         });
 
-        std::ranges::for_each(threads, [](std::thread* t)
+        const auto loop = reinterpret_cast<struct us_loop_t*>(uWS::Loop::get());
+        us_timer_t* delay_timer = us_create_timer(loop, 0, 0);
+
+        us_timer_set(delay_timer, [](struct us_timer_t*/*t*/)
         {
-            t->join();
-        });
+            if (!global_unreal_init) return;
+            UpdateData data;
+            data.position = TSWShared::TSWHelper::get_instance()->get_current_position_in_game(true);
+            const auto actor = TSWShared::TSWHelper::get_instance()->get_camera_actor();
+            data.date_time = TSWShared::TSWHelper::get_instance()->get_world_date_time(actor);
+
+            Output::send<LogLevel::Verbose>(std::format(L"New Data: lat {}, long {}, time {}", data.position.lat,
+                                                        data.position.lon,
+                                                        data.date_time.to_iso8601()));
+            auto iso_date = data.date_time.to_iso8601();
+            nlohmann::json json_data = {
+                {"event", "pos"},
+                {"lat", data.position.lat},
+                {"long", data.position.lon},
+                {"speed_kph", data.position.kph},
+                {"time_iso_8601", std::string(iso_date.begin(), iso_date.end())}
+            };
+            auto json_dumped = json_data.dump();
+
+            global_app->publish("pos", std::string_view(json_dumped.c_str(), json_dumped.size()), uWS::OpCode::TEXT,
+                                false);
+        }, 10000, 10000);
+
+        global_app = &app;
+        global_app->run();
     }
 
 public:
@@ -167,20 +202,13 @@ public:
 
     auto on_update() -> void override
     {
-        process_tasks();
-        if (!initialized_) return;
-        const auto now = steady_clock::now();
-        if (now - last_run_minute_ >= interval_minute_)
-        {
-            const auto latlon = TSWShared::TSWHelper::get_instance()->get_current_position_in_game();
-            
-            last_run_minute_ = now;
-        }
+        if (!global_unreal_init) return;
     }
 
     auto on_unreal_init() -> void override
     {
-        initialized_ = true;
+        global_unreal_init = true;
+        thread_1_ = std::make_unique<std::thread>(&EbulaWebsocketMod::ws_start, this);
     }
 };
 

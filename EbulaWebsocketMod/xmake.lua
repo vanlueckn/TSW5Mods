@@ -3,6 +3,7 @@ add_requires("uwebsockets")
 
 target(projectName)
     add_rules("ue4ss.mod")
+    add_rules("mode.release")
     add_deps("TSWShared")
     add_headerfiles("Public/*.hpp")
     add_includedirs("Public")
