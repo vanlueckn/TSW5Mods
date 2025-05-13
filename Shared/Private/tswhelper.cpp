@@ -8,7 +8,13 @@
 #include <Unreal/UObjectGlobals.hpp>
 #include <restclient.hpp>
 #include <chrono>
+#include <iostream>
+#include <ctime>
+#include <tuple>
+#include <thread>
 #include "tswhelper.hpp"
+
+#include "ExceptionHandling.hpp"
 
 using namespace RC;
 using namespace RC::Unreal;
@@ -110,7 +116,7 @@ UFunction* TSWShared::TSWHelper::get_function_by_name(const StringType& name, UC
 
 TSWShared::lat_lon TSWShared::TSWHelper::get_current_position_in_game(const bool with_speed)
 {
-    const auto start_time = Clock::now();
+    const auto start_time_complete = Clock::now();
     lat_lon latlon;
     latlon.lat = 0.0f;
     latlon.lon = 0.0f;
@@ -139,21 +145,16 @@ TSWShared::lat_lon TSWShared::TSWHelper::get_current_position_in_game(const bool
         float out_long;
         bool success;
     } params{};
+
     const auto pawn = get_player_pawn();
-
     if (!pawn)
-    {
-        return latlon;
-    }
-
-    params.actor = static_cast<AActor*>(pawn);
-    if (!params.actor)
     {
         Output::send<LogLevel::Error>(STR("Pawn not found\n"));
         return latlon;
     }
-    location_lib->ProcessEvent(static_function, &params);
 
+    params.actor = static_cast<AActor*>(pawn);
+    location_lib->ProcessEvent(static_function, &params);
     latlon.lat = params.out_lat;
     latlon.lon = params.out_long;
 
@@ -161,11 +162,36 @@ TSWShared::lat_lon TSWShared::TSWHelper::get_current_position_in_game(const bool
     {
         latlon.kph = get_actor_velocity_in_kph(static_cast<AActor*>(pawn));
     }
-    auto const end_time = Clock::now();
-    Output::send<LogLevel::Verbose>(std::format(L"Zeit Get Actor Lat Long: {}ns",
+
+    auto const end_time_complete = Clock::now();
+    Output::send<LogLevel::Verbose>(std::format(L"Zeit complete: {}ns",
                                                 std::chrono::duration_cast<std::chrono::nanoseconds>(
-                                                    end_time - start_time).count()));
+                                                    end_time_complete - start_time_complete).count()));
+
     return latlon;
+}
+
+static auto set_date_callback(const UnrealScriptFunctionCallableContext& context, void* custom_data) -> void
+{
+    Output::send<LogLevel::Error>(STR("time was updated\n"));
+}
+
+void TSWShared::TSWHelper::inject_set_date()
+{
+    return;
+    Output::send<LogLevel::Verbose>(STR("Injecting set date\n"));
+    const auto tod_function = UObjectGlobals::StaticFindObject<UFunction*>(
+        nullptr, nullptr, STR("/Script/Engine.PlayerController:ClientRestart"));
+
+    if (!tod_function)
+    {
+        Output::send<LogLevel::Error>(STR("TS2Prototype.TS2GameplayFunctionLibrary not found\n"));
+        return;
+    }
+
+    UObjectGlobals::RegisterHook(tod_function, [](...)
+    {
+    }, &set_date_callback, nullptr);
 }
 
 TSWShared::tsw_date_time TSWShared::TSWHelper::get_world_date_time(UObject* world_context_object)
@@ -250,6 +276,7 @@ UObject* TSWShared::TSWHelper::get_player_controller()
     std::vector<UObject*> controllers;
     UObjectGlobals::FindAllOf(STR("PlayerController"), controllers);
     Output::send<LogLevel::Verbose>(std::format(L"Count player controllers: {}", controllers.size()));
+
     for (const auto controller : controllers)
     {
         if (controller && is_valid_u_object(controller))
@@ -264,19 +291,19 @@ UObject* TSWShared::TSWHelper::get_player_controller()
 UObject* TSWShared::TSWHelper::get_player_pawn()
 {
     const auto player_controller = get_player_controller();
-    if (!player_controller)
+    if (!player_controller || !is_valid_u_object(player_controller))
     {
-        Output::send<LogLevel::Error>(STR("Player Controller not found\n"));
+        Output::send<LogLevel::Error>(STR("Player Controller not found or invalid\n"));
         return nullptr;
     }
 
     const auto get_pawn_function = get_function_by_name_in_chain(STR("K2_GetPawn"), player_controller);
 
-    if (!get_pawn_function)
+    if (!get_pawn_function || !is_valid_u_object(get_pawn_function))
     {
-        Output::send<LogLevel::Error>(STR("K2_GetPawn: Function not found\n"));
+        Output::send<LogLevel::Error>(STR("K2_GetPawn: Function not found or invalid\n"));
         player_controller_cached_ = nullptr;
-        return get_player_pawn();
+        return nullptr;
     }
 
     struct params
@@ -320,7 +347,7 @@ void TSWShared::TSWHelper::execute_console_command(FString command, UObject* pla
 
     const auto string_data = command.GetCharTArray().GetData();
 
-    Output::send<LogLevel::Verbose>(STR("Executing command: {}\n"), string_data);
+    Output::send<LogLevel::Verbose>(STR("Executing command: <{}>\n"), string_data);
 
     kismet_lib->ProcessEvent(kismet_static_function, &params);
 }
@@ -342,6 +369,56 @@ float TSWShared::TSWHelper::calculate_distance_in_miles_lat_lon(const lat_lon p1
         sin(delta_lambda / 2) * sin(delta_lambda / 2);
     const float c = 2 * atan2(sqrt(a), sqrt(1 - a));
     return R * c * 0.000621371;
+}
+
+std::tuple<int, int, int> TSWShared::TSWHelper::get_current_utc_date()
+{
+    const std::time_t now = std::time(nullptr);
+    std::tm utc_time;
+
+    // Convert to UTC time structure using gmtime_s (thread-safe)
+    if (gmtime_s(&utc_time, &now) != 0)
+    {
+        throw std::runtime_error("Failed to get UTC time");
+    }
+
+    // Extract day, month, and year
+    int day = utc_time.tm_mday;
+    int month = utc_time.tm_mon + 1; // tm_mon is 0-based
+    int year = utc_time.tm_year + 1900; // tm_year is years since 1900
+
+    return std::make_tuple(year, month, day);
+}
+
+void TSWShared::TSWHelper::listen_for_console_command(std::function<void()> callback)
+{
+    Hook::RegisterProcessConsoleExecGlobalPostCallback(
+        [callback](UObject* context, const TCHAR* cmd, FOutputDevice& ar, UObject* executor) -> std::pair<bool, bool>
+        {
+            (void)context;
+            (void)executor;
+
+            std::pair<bool, bool> return_value{};
+            return_value.first = false;
+
+            return TRY([&]
+            {
+                const auto command = File::StringType{ToCharTypePtr(cmd)};
+                const auto command_parts = explode_by_occurrence_with_quotes(command, STR(' '));
+                File::StringType command_name = command;
+                if (command_parts.size() > 1)
+                {
+                    command_name = command_parts[0];
+                }
+
+                if (command_name.contains(L"SetLocalDateTime") || command_name.contains(L"SetWorldDateTime"))
+                {
+                    callback();
+                }
+
+                return return_value;
+            });
+        });
 }
 
 TSWShared::tsw_date_time TSWShared::TSWHelper::ue_to_tsw_date_time(const ue_datetime& ue_date_time)

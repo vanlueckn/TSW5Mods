@@ -12,7 +12,9 @@ using namespace std::chrono;
 using namespace TSWShared;
 using json = nlohmann::json;
 
-static bool RealWeatherEnabled = false;
+static bool real_weather_enabled = false;
+static bool historical_weather_enabled = false;
+constexpr float epsilon = 1e-6f;
 
 struct weather_data
 {
@@ -56,8 +58,8 @@ static auto enable_disable_main_menu_slider_childs(const uintptr_t* p, const siz
     }
 }
 
-auto mode_slider_settings_post_update_mode(const UnrealScriptFunctionCallableContext& context,
-                                           void* custom_data) -> void
+static auto mode_slider_settings_post_update_mode(const UnrealScriptFunctionCallableContext& context,
+                                                  void* custom_data) -> void
 {
     const auto mode_slider = context.Context->GetValuePtrByPropertyNameInChain<UObject*>(STR("ModeSlider"));
     const auto presets_slider = context.Context->GetValuePtrByPropertyNameInChain<UObject*>(STR("PresetsSlider"));
@@ -105,14 +107,6 @@ auto mode_slider_settings_post_update_mode(const UnrealScriptFunctionCallableCon
         return;
     }
 
-    for (UStruct* Struct = (*presets_slider)->IsA<UStruct>()
-                               ? static_cast<UStruct*>(*presets_slider)
-                               : (*presets_slider)->GetClassPrivate(); FProperty* property : Struct->
-         ForEachPropertyInChain())
-    {
-        Output::send<LogLevel::Verbose>(
-            STR("Property: {} with Type {}\n"), property->GetFName().ToString(), property->GetCPPType().GetCharArray());
-    }
     const auto presets_slide_display_text = (*presets_slider)->GetValuePtrByPropertyNameInChain<FText>(
         STR("DisplayText"));
     if (!presets_slide_display_text)
@@ -164,7 +158,7 @@ auto mode_slider_settings_post_update_mode(const UnrealScriptFunctionCallableCon
 
     struct
     {
-        FText Text;
+        FText text;
     } params_text;
 
     struct
@@ -172,24 +166,29 @@ auto mode_slider_settings_post_update_mode(const UnrealScriptFunctionCallableCon
         FText Text;
     } params_get_text;
 
-    params_text.Text = FText(STR("Custom"));
+    params_text.text = FText(STR("Custom"));
 
     (*mode_slider)->ProcessEvent(selected_option_index, &params);
     Output::send<LogLevel::Default>(STR("Selected index: {}\n"), params.index);
 
-    if (params.index == 2)
+    if (params.index >= 2)
     {
         presets_slide_display_text->SetString(FString(STR("Custom")));
         Output::send<LogLevel::Verbose>(STR("Selected text: {}\n"), params_get_text.Text.ToString());
         (*presets_slider)->ProcessEvent(set_text_function, &params_text);
         (*presets_slider)->ProcessEvent(disable_function, nullptr);
-        RealWeatherEnabled = true;
+        historical_weather_enabled = false;
+        real_weather_enabled = true;
         enable_disable_main_menu_slider_childs(elements, 6, true);
+        if (params.index == 3)
+        {
+            historical_weather_enabled = true;
+        }
     }
     else
     {
         (*presets_slider)->ProcessEvent(enable_function, nullptr);
-        RealWeatherEnabled = false;
+        real_weather_enabled = false;
 
         if (params.index == 1)
         {
@@ -198,9 +197,9 @@ auto mode_slider_settings_post_update_mode(const UnrealScriptFunctionCallableCon
     }
 }
 
-auto mode_slider_populate_callback(const UnrealScriptFunctionCallableContext& context, void* custom_data) -> void
+static auto mode_slider_populate_callback(const UnrealScriptFunctionCallableContext& context, void* custom_data) -> void
 {
-    RealWeatherEnabled = false;
+    real_weather_enabled = false;
     const auto mode_slider = context.Context->GetValuePtrByPropertyNameInChain<UObject*>(STR("ModeSlider"));
 
     if (!mode_slider || !(*mode_slider))
@@ -227,46 +226,54 @@ auto mode_slider_populate_callback(const UnrealScriptFunctionCallableContext& co
     {
         FString Option;
     } params{};
-    params.Option = FString(STR("Real Weather"));
+    params.Option = FString(STR("Live Weather"));
     (*mode_slider)->ProcessEvent(add_option_function, &params);
+    struct
+    {
+        FString Option;
+    } params2{};
+    params2.Option = FString(STR("Historical Weather"));
+    (*mode_slider)->ProcessEvent(add_option_function, &params2);
 }
 
 class TSWWeatherMod final : public CppUserModBase
 {
-private:
+    steady_clock::time_point last_time_force_sync_ = steady_clock::now();
+    std::function<void()>* console_command_callback_ = nullptr;
     UObject* game_instance_cached_ = nullptr;
     steady_clock::time_point last_run_ = steady_clock::now();
     steady_clock::time_point last_run_minute_ = steady_clock::now();
-    minutes interval_ = minutes(15);
+    minutes interval_ = minutes(5);
     minutes interval_minute_ = minutes(1);
     UClass* location_lib_ = nullptr;
     UClass* weather_manager_ = nullptr;
     UFunction* static_function_ = nullptr;
     bool initialized_ = false;
-    lat_lon last_lat_lon_ = {0.0f, 0.0f};
+    lat_lon last_lat_lon_ = {.lat = 0.0f, .lon = 0.0f, .kph = 0.0f};
 
     static void inject_settings_menu()
     {
         auto static main_menu_weather_environment_settings = STR("MainMenuWeatherEnvironmentSettings_C");
-        const auto mainMenuWeatherEnvironmentSettingsClass = UObjectGlobals::FindFirstOf(
+        const auto main_menu_weather_environment_settings_class = UObjectGlobals::FindFirstOf(
             main_menu_weather_environment_settings);
 
-        if (!mainMenuWeatherEnvironmentSettingsClass)
+        if (!main_menu_weather_environment_settings_class)
         {
             Output::send<LogLevel::Error>(STR("MainMenuWeatherEnvironmentSettings not found\n"));
             return;
         }
 
-        const auto construct_function = mainMenuWeatherEnvironmentSettingsClass->GetFunctionByName(
+        const auto construct_function = main_menu_weather_environment_settings_class->GetFunctionByName(
             STR("PopulateModeSlider"));
-        const auto update_mode_function = mainMenuWeatherEnvironmentSettingsClass->GetFunctionByName(STR("UpdateMode"));
+        const auto update_mode_function = main_menu_weather_environment_settings_class->GetFunctionByName(
+            STR("UpdateMode"));
 
         UObjectGlobals::RegisterHook(construct_function, [](...)
         {
-        }, &mode_slider_populate_callback, mainMenuWeatherEnvironmentSettingsClass);
+        }, &mode_slider_populate_callback, main_menu_weather_environment_settings_class);
         UObjectGlobals::RegisterHook(update_mode_function, [](...)
         {
-        }, &mode_slider_settings_post_update_mode, mainMenuWeatherEnvironmentSettingsClass);
+        }, &mode_slider_settings_post_update_mode, main_menu_weather_environment_settings_class);
 
         //modeSlider->ProcessEvent(GetFunctionByName(STR("PopulateModeSlider"), modeSlider), PopulateModeSliderCallback);
     }
@@ -286,9 +293,9 @@ private:
         const auto game_instance = get_game_instance_cached();
         if (!game_instance) return;
 
-        const auto LocalPlayersArray = game_instance->GetValuePtrByPropertyNameInChain<TArray<UObject*>>(
+        const auto local_players_array = game_instance->GetValuePtrByPropertyNameInChain<TArray<UObject*>>(
             STR("LocalPlayers"));
-        const auto local_player = LocalPlayersArray->operator[](0);
+        const auto local_player = local_players_array->operator[](0);
         const auto player_controller = *local_player->GetValuePtrByPropertyNameInChain<UObject*>(
             STR("PlayerController"));
 
@@ -314,7 +321,9 @@ private:
             FString(std::format(L"{} {}", set_wind_strength, calculate_wind_value(data.wind_speed)).c_str()),
             player_controller, kismet_static_function, kismet_lib);
         TSWHelper::execute_console_command(
-            FString(std::format(L"{} {}", set_precipitation, calculate_rain_value(data.percipitation)).c_str()),
+            FString(std::format(L"{} {}", set_precipitation,
+                                calculate_rain_value(data.snow > 0 && data.temperature < 5 ? data.snow : data.rain)).
+                c_str()),
             player_controller, kismet_static_function, kismet_lib);
         //ExecuteConsoleCommand(FString(std::format(L"{} {}", setPiledSnow, data.snow).c_str()), playerController, kismetStaticFunction, kismetLib);
         //ExecuteConsoleCommand(FString(std::format(L"{} {}", setGroundSnow, data.snow).c_str()), playerController, kismetStaticFunction, kismetLib);
@@ -338,15 +347,15 @@ private:
 
         const float output = output_start + (input - input_start) * slope;
 
-        return (output < output_cap) ? 0.0f : output;
+        return output < output_cap + epsilon ? 0.0f : output;
     }
 
 
     static float calculate_rain_value(const float input)
     {
-        constexpr float input_start = 0.025f;
-        constexpr float input_end = 0.5f;
-        constexpr float output_start = 0.1f;
+        constexpr float input_start = 0.15f;
+        constexpr float input_end = 3.175f;
+        constexpr float output_start = 0.05f;
         constexpr float output_end = 1.0f;
         constexpr float output_cap = 1.0f;
 
@@ -354,7 +363,13 @@ private:
 
         const float output = output_start + (input - input_start) * slope;
 
-        return (output > output_cap) ? 1.0f : output;
+        // Explicit clamping for small values
+        if (output < 0.02f + epsilon)
+        {
+            return 0.0f;
+        }
+
+        return output > output_cap ? 1.0f : output;
     }
 
     static float calculate_fog_value(const float input)
@@ -369,30 +384,110 @@ private:
 
         float output = output_start + (input - input_start) * slope;
 
-        if (input < 40 && input >= 20) output = output * 2;
-        if (input < 20) output = output * 4;
+        if (input < 40 && input >= 20)
+            output = output * 2;
+        if (input < 20)
+            output = output * 4;
 
-        return (output < output_cap) ? 0.0f : output;
+        return output < output_cap + epsilon ? 0.0f : output;
     }
 
-    static weather_data get_current_weather(lat_lon latlon)
+    static weather_data get_current_weather(lat_lon latlon, bool& error)
     {
-        RestClient client(L"api.open-meteo.com", INTERNET_DEFAULT_HTTPS_PORT, true);
+        weather_data data{};
+        data.visibility = 10000;
 
-        json get_response = client.get(std::format(
-            L"/v1/forecast?latitude={}&longitude={}&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,rain,showers,snowfall,weather_code,cloud_cover,pressure_msl,surface_pressure,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility",
-            latlon.lat, latlon.lon));
+        RestClient client(historical_weather_enabled ? L"archive-api.open-meteo.com" : L"api.open-meteo.com",
+                          INTERNET_DEFAULT_HTTPS_PORT, true);
 
-        weather_data data;
-        data.temperature = get_response["current"]["temperature_2m"];
-        data.rain = get_response["current"]["rain"];
-        data.snow = get_response["current"]["snowfall"];
-        data.cloud_cover = get_response["current"]["cloud_cover"];
-        data.weather_code = get_response["current"]["weather_code"];
-        data.wind_speed = get_response["current"]["wind_speed_10m"];
-        data.wind_direction = get_response["current"]["wind_direction_10m"];
-        data.visibility = get_response["current"]["visibility"];
-        data.percipitation = get_response["current"]["precipitation"];
+        std::wstring url_scheme;
+        tsw_date_time game_time;
+        if (historical_weather_enabled)
+        {
+            const auto actor = TSWHelper::get_camera_actor();
+            if (!actor)
+            {
+                error = true;
+                return data;
+            }
+
+            const auto [year, month, day] = TSWHelper::get_current_utc_date();
+            game_time = TSWHelper::get_world_date_time(actor);
+
+            if (game_time.year > year ||
+                (game_time.year == year && (game_time.month > month ||
+                    (game_time.month == month && game_time.day > day))))
+            {
+                game_time.year = year - 1;
+            }
+
+            const auto current_day_string = game_time.to_string_no_time();
+            url_scheme = std::format(
+                L"/v1/archive?latitude={}&longitude={}&start_date={}&end_date={}&hourly=temperature_2m,relative_humidity_2m,precipitation,rain,snowfall,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m",
+                latlon.lat, latlon.lon, current_day_string, current_day_string);
+        }
+        else
+        {
+            url_scheme = std::format(
+                L"/v1/forecast?latitude={}&longitude={}&current=temperature_2m,relative_humidity_2m,precipitation,rain,showers,snowfall,weather_code,cloud_cover,wind_speed_10m,wind_direction_10m,wind_gusts_10m,visibility",
+                latlon.lat, latlon.lon);
+        }
+
+        json get_response = client.get(url_scheme);
+
+        const auto dmp = get_response.dump();
+        Output::send<LogLevel::Verbose>(std::wstring(dmp.begin(), dmp.end()));
+
+        if (get_response.contains("error"))
+        {
+            error = true;
+            return data;
+        }
+        if (historical_weather_enabled)
+        {
+            const int current_hour = game_time.hour;
+            if (current_hour < 0 || current_hour > 23)
+            {
+                error = true;
+                return data;
+            }
+            if (!get_response.contains("hourly"))
+            {
+                error = true;
+                return data;
+            }
+
+            data.temperature = get_response["hourly"]["temperature_2m"][current_hour];
+            data.rain = get_response["hourly"]["rain"][current_hour];
+            data.snow = get_response["hourly"]["snowfall"][current_hour];
+            data.cloud_cover = get_response["hourly"]["cloud_cover"][current_hour];
+            data.weather_code = get_response["hourly"]["weather_code"][current_hour];
+            data.wind_speed = get_response["hourly"]["wind_speed_10m"][current_hour];
+            data.wind_direction = get_response["hourly"]["wind_direction_10m"][current_hour];
+            if (data.weather_code == 45 || data.weather_code == 48)
+            {
+                data.visibility = 100;
+            }
+            data.percipitation = get_response["hourly"]["precipitation"][current_hour];
+        }
+        else
+        {
+            if (!get_response.contains("current"))
+            {
+                error = true;
+                return data;
+            }
+
+            data.temperature = get_response["current"]["temperature_2m"];
+            data.rain = get_response["current"]["rain"];
+            data.snow = get_response["current"]["snowfall"];
+            data.cloud_cover = get_response["current"]["cloud_cover"];
+            data.weather_code = get_response["current"]["weather_code"];
+            data.wind_speed = get_response["current"]["wind_speed_10m"];
+            data.wind_direction = get_response["current"]["wind_direction_10m"];
+            data.visibility = get_response["current"]["visibility"];
+            data.percipitation = get_response["current"]["precipitation"];
+        }
 
         return data;
     }
@@ -423,9 +518,15 @@ private:
 
     void sync_weather(const lat_lon pos)
     {
-        if (!RealWeatherEnabled) return;
+        if (!real_weather_enabled) return;
         Output::send<LogLevel::Verbose>(STR("Syncing weather\n"));
-        const weather_data data = get_current_weather(pos);
+        bool error = false;
+        const weather_data data = get_current_weather(pos, error);
+        if (error)
+        {
+            Output::send<LogLevel::Error>(STR("Weather error interpreting data\n"));
+            return;
+        }
         apply_weather_data(data);
     }
 
@@ -433,25 +534,26 @@ public:
     TSWWeatherMod() : CppUserModBase()
     {
         ModName = STR("TSWWeatherMod");
-        ModVersion = STR("1.0");
-        ModDescription = STR("Real life weather sync for TSW5");
+        ModVersion = STR("0.2");
+        ModDescription = STR("Live weather sync for TSW5 with support for historical data.");
         ModAuthors = STR("Luex");
-        // Do not change this unless you want to target a UE4SS version
-        // other than the one you're currently building with somehow.
-        // ModIntendedSDKVersion = STR("2.6");
 
         Output::send<LogLevel::Verbose>(STR("TSWWeatherMod Code running\n"));
     }
 
     ~TSWWeatherMod() override
     {
+        if (console_command_callback_)
+        {
+            free(console_command_callback_);
+            console_command_callback_ = nullptr;
+        }
     }
 
     auto on_update() -> void override
     {
         if (!initialized_) return;
-        const auto now = steady_clock::now();
-        if (now - last_run_ >= interval_)
+        if (const auto now = steady_clock::now(); now - last_run_ >= interval_)
         {
             const auto latlon = TSWHelper::get_instance()->get_current_position_in_game();
             last_lat_lon_ = latlon;
@@ -463,7 +565,7 @@ public:
             const auto latlon = TSWHelper::get_instance()->get_current_position_in_game();
             const auto distance = TSWHelper::calculate_distance_in_miles_lat_lon(latlon, last_lat_lon_);
             Output::send<LogLevel::Verbose>(STR("Distance: {}mi\n"), distance);
-            if (distance > 40)
+            if (distance > 30)
             {
                 //force sync
                 sync_weather(latlon);
@@ -477,6 +579,20 @@ public:
     {
         initialized_ = true;
         inject_settings_menu();
+        TSWHelper::inject_set_date();
+        TSWHelper::listen_for_console_command([this]
+        {
+            constexpr auto min_interval = milliseconds(250);
+            const auto now = steady_clock::now();
+            if (now - last_time_force_sync_ < min_interval)
+            {
+                return;
+            }
+            const auto latlong = TSWHelper::get_instance()->get_current_position_in_game();
+            last_time_force_sync_ = now;
+            Output::send<LogLevel::Verbose>(STR("Force Syncing weather\n"));
+            sync_weather(latlong);
+        });
     }
 
     static UObject* get_text_slider_with_arrows()
